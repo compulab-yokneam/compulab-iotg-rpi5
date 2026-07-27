@@ -1,0 +1,1057 @@
+From 4f4599ba143e20cbd6bc5e1b3c8250268198144d Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 27 Jul 2026 18:08:52 +0300
+Subject: [PATCH] Add compulab iotg-rpi5 device support
+
+Upstream-Status: Pending
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/overlays/Makefile           |   2 +
+ arch/arm/boot/dts/overlays/iotg-rpi5/Makefile |  16 +
+ arch/arm/boot/dts/overlays/iotg-rpi5/README   |  93 ++++++
+ .../iotg-rpi5/iotg-rpi5-b2b-overlay.dts       |  21 ++
+ .../iotg-rpi5-cmd-button-overlay.dts          |  41 +++
+ .../iotg-rpi5/iotg-rpi5-dio-overlay.dts       | 122 +++++++
+ .../iotg-rpi5/iotg-rpi5-gmc-overlay.dts       | 111 +++++++
+ .../iotg-rpi5/iotg-rpi5-io-a-overlay.dts      |  64 ++++
+ .../iotg-rpi5/iotg-rpi5-io-b-overlay.dts      |  64 ++++
+ .../iotg-rpi5-modem-reset-overlay.dts         |  45 +++
+ arch/arm64/boot/dts/Makefile                  |   2 +-
+ arch/arm64/boot/dts/compulab/Makefile         |  12 +
+ arch/arm64/boot/dts/compulab/iotg-rpi5.dts    |   5 +
+ arch/arm64/boot/dts/compulab/iotg-rpi5.dtsi   | 313 ++++++++++++++++++
+ arch/arm64/boot/dts/compulab/iotg-rpi5l.dts   |   5 +
+ 15 files changed, 915 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/Makefile
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/README
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-b2b-overlay.dts
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-cmd-button-overlay.dts
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-dio-overlay.dts
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-gmc-overlay.dts
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-a-overlay.dts
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-b-overlay.dts
+ create mode 100644 arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-modem-reset-overlay.dts
+ create mode 100644 arch/arm64/boot/dts/compulab/Makefile
+ create mode 100644 arch/arm64/boot/dts/compulab/iotg-rpi5.dts
+ create mode 100644 arch/arm64/boot/dts/compulab/iotg-rpi5.dtsi
+ create mode 100644 arch/arm64/boot/dts/compulab/iotg-rpi5l.dts
+
+diff --git a/arch/arm/boot/dts/overlays/Makefile b/arch/arm/boot/dts/overlays/Makefile
+index 261dfb885a03..cd905e765774 100644
+--- a/arch/arm/boot/dts/overlays/Makefile
++++ b/arch/arm/boot/dts/overlays/Makefile
+@@ -375,5 +375,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
+ targets += dtbs dtbs_install
+ targets += $(dtbo-y)
+ 
++subdir-y	:= iotg-rpi5
++
+ always-y	:= $(dtbo-y)
+ clean-files	:= *.dtbo
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/Makefile b/arch/arm/boot/dts/overlays/iotg-rpi5/Makefile
+new file mode 100644
+index 000000000000..37c58196b4aa
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/Makefile
+@@ -0,0 +1,16 @@
++# Overlays for the IOT-GATE-RPI5
++
++dtbo-$(CONFIG_ARCH_BCM2835) += \
++	iotg-rpi5-gmc.dtbo \
++	iotg-rpi5-io-a.dtbo \
++	iotg-rpi5-io-b.dtbo \
++	iotg-rpi5-b2b.dtbo \
++	iotg-rpi5-cmd-button.dtbo \
++	iotg-rpi5-dio.dtbo \
++	iotg-rpi5-modem-reset.dtbo
++
++targets += dtbs dtbs_install
++targets += $(dtbo-y)
++
++always-y	:= $(dtbo-y)
++clean-files	:= *.dtbo
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/README b/arch/arm/boot/dts/overlays/iotg-rpi5/README
+new file mode 100644
+index 000000000000..473651c5455e
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/README
+@@ -0,0 +1,93 @@
++Name:   iotg-rpi5-gmc
++Info:   Configures the Gateway Management Circuitry (GMC) on the
++        Compulab IOTG-RPi5:
++        - EEPROM on I2C3: used for storing sensitive manufacturing data
++          and must not be changed or modified
++        - TPM on I2C3
++        - GPIO expander on I2C3
++        - GPIO-controlled user LEDs
++Load:   dtoverlay=iotg-rpi5-gmc
++Params: <None>
++
++
++Name:   iotg-rpi5-io-a
++Info:   Configures the Industrial I/O interface block A on the
++        Compulab IOTG-RPi5:
++        - RS485 / CAN
++Load:   dtoverlay=iotg-rpi5-io-a,<param>=<val>
++Params: can                 Configure MCP251xFD CAN controller
++                            over SPI2 bus, CS0
++                            (boolean, optional)
++        rs485               Configure UART4 on GPIOs 12,13
++                            (boolean, optional)
++
++
++Name:   iotg-rpi5-io-b
++Info:   Configures the Industrial I/O interface block B on the
++        Compulab IOTG-RPi5:
++        - RS485 / CAN
++Load:   dtoverlay=iotg-rpi5-io-b,<param>=<val>
++Params: can                 Configure MCP251xFD CAN controller
++                            over SPI0 bus, CS0
++                            (boolean, optional)
++        rs485               Configure UART2 on GPIOs 4,5
++                            (boolean, optional)
++
++
++Name:   iotg-rpi5-b2b
++Info:   Configures the Board to Board Connector on the
++        Compulab IOTG-RPi5:
++        - I2C6 bus normally allocated to the MIPI0 interface,
++	  but can be used as a general I2C bus
++Load:   dtoverlay=iotg-rpi5-b2b
++Params: <None>
++
++
++Name:   iotg-rpi5-cmd-button
++Info:   Configures the CMD button on the Compulab IOTG-RPi5.
++        The CMD button is implemented as gpio-keys device.
++Load:   dtoverlay=iotg-rpi5-cmd-button,<param>=<val>
++Params: label                   Set a label for the button.
++                                Default: 'cmd-button'
++                                (string, optional)
++        keycode                 Set key code for the button.
++                                Default: 171 (KEY_CONFIG)
++                                (optional)
++        autorepeat              Enable key autorepeat.
++                                Enabled by default
++                                (bool, optional)
++
++
++Name:   iotg-rpi5-dio
++Info:   Configures the Digital I/O block on the Compulab IOTG-RPi5.
++        Provides four pins that can be configured as either Digital
++        Inputs or Digital Outputs.
++Load:   dtoverlay=iotg-rpi5-dio,<param>=<val>
++Params: o0                      Configure pin 0 as a Digital Output.
++                                Default: Digital Input
++                                (bool, optional)
++
++        o1                      Configure pin 1 as a Digital Output.
++                                Default: Digital Input
++                                (bool, optional)
++
++        o2                      Configure pin 2 as a Digital Output.
++                                Default: Digital Input
++                                (bool, optional)
++
++        o3                      Configure pin 3 as a Digital Output.
++                                Default: Digital Input
++                                (bool, optional)
++
++
++Name:   iotg-rpi5-modem-reset
++Info:   Configures the modem emergency reset mechanism for the
++        Compulab IOTG-RPi5.
++        The modem reset circuit is implemented as a gpio-led device
++        with the 'oneshot' trigger bound to it.
++Load:   dtoverlay=iotg-rpi5-modem-reset,<param>=<val>
++Params: delay_ms                Specify (in ms) the delay_on and delay_off
++                                parameters of the oneshot trigger.
++                                Both are set to the same value.
++                                Minimum value: 300 ms.
++                                Default: 300 ms (optional)
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-b2b-overlay.dts b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-b2b-overlay.dts
+new file mode 100644
+index 000000000000..e01e480883ff
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-b2b-overlay.dts
+@@ -0,0 +1,21 @@
++// Definitions for IOTG-RPI5 Board to Board Connector 
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++
++/ {
++	compatible = "brcm,bcm2712";
++
++	fragment@0 {
++		target = <&i2c6>;
++		i2c_csi_dsi0: __overlay__ {
++			pinctrl-0 = <&rp1_i2c6_38_39>;
++			pinctrl-names = "default";
++			clock-frequency = <100000>;
++			status = "okay";
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-cmd-button-overlay.dts b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-cmd-button-overlay.dts
+new file mode 100644
+index 000000000000..177cc2a87136
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-cmd-button-overlay.dts
+@@ -0,0 +1,41 @@
++// Definitions for IOTG-RPI5 CMD button
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/linux-event-codes.h>
++
++/ {
++	compatible = "brcm,bcm2712";
++
++	fragment@0 {
++		target = <&gpio_keys>;
++		__overlay__ {
++			autorepeat;
++		};
++	};
++
++	fragment@1 {
++		target-path = "/";
++		__overlay__ {
++			gpio_keys: gpio-keys {
++				compatible = "gpio-keys";
++				status = "okay";
++
++				cmd_button: cmd-button {
++					label = "cmd-button";
++					gpios = <&gpio 18 GPIO_ACTIVE_LOW>;
++					linux,code = <KEY_CONFIG>; /* 171 */
++				};
++			};
++		};
++	};
++
++	__overrides__ {
++		label =      <&cmd_button>,"label";
++		keycode =    <&cmd_button>,"linux,code:0";
++		autorepeat = <0>,"=0";
++	};
++
++};
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-dio-overlay.dts b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-dio-overlay.dts
+new file mode 100644
+index 000000000000..bc4ccc8097d8
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-dio-overlay.dts
+@@ -0,0 +1,122 @@
++// Definitions for IOTG-RPI5 I/O: DIx Part
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	compatible = "brcm,bcm2712";
++
++	/* DO0 */
++	fragment@0 {
++		target = <&do0>;
++		__dormant__ {
++		     status = "disabled";
++		};
++	};
++	fragment@1 {
++		target = <&do0>;
++		__overlay__ {
++		     status = "okay";
++		};
++	};
++
++	/* DO1 */
++	fragment@2 {
++		target = <&do1>;
++		__dormant__ {
++		     status = "disabled";
++		};
++	};
++	fragment@3 {
++		target = <&do1>;
++		__overlay__ {
++		     status = "okay";
++		};
++	};
++
++	/* DO2 */
++	fragment@4 {
++		target = <&do2>;
++		__dormant__ {
++		     status = "disabled";
++		};
++	};
++	fragment@5 {
++		target = <&do2>;
++		__overlay__ {
++		     status = "okay";
++		};
++	};
++
++	/* DO3 */
++	fragment@6 {
++		target = <&do3>;
++		__dormant__ {
++		     status = "disabled";
++		};
++	};
++	fragment@7 {
++		target = <&do3>;
++		__overlay__ {
++		     status = "okay";
++		};
++	};
++
++	/* DI0 */
++	fragment@8 {
++		target = <&gpio>;
++		__dormant__ {
++			di_hog0: di_hog_0@0 {
++			     gpio-hog;
++			     gpios = <6 GPIO_ACTIVE_HIGH>;
++			     input;
++			     line-name = "DI0 disabled";
++			};
++		};
++	};
++	/* DI1 */
++	fragment@9 {
++		target = <&gpio>;
++		__dormant__ {
++			di_hog1: di_hog_1@1 {
++				gpio-hog;
++				gpios = <19 GPIO_ACTIVE_HIGH>;
++				input;
++				line-name = "DI1 disabled";
++			};
++		};
++	};
++	/* DI2 */
++	fragment@10 {
++		target = <&gpio>;
++		__dormant__ {
++			di_hog2: di_hog_2@2 {
++				gpio-hog;
++				gpios = <25 GPIO_ACTIVE_HIGH>;
++				input;
++				line-name = "DI2 disabled";
++			};
++		};
++	};
++	/* DI3 */
++	fragment@11 {
++		target = <&gpio>;
++		__dormant__ {
++			di_hog3: di_hog_3@3 {
++				gpio-hog;
++				gpios = <27 GPIO_ACTIVE_HIGH>;
++				input;
++				line-name = "DI3 disabled";
++			};
++		};
++	};
++
++	__overrides__ {
++		o0 = <0>, "+0-1+8";
++		o1 = <0>, "+2-3+9";
++		o2 = <0>, "+4-5+10";
++		o3 = <0>, "+6-7+11";
++	};
++};
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-gmc-overlay.dts b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-gmc-overlay.dts
+new file mode 100644
+index 000000000000..13228d82e59a
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-gmc-overlay.dts
+@@ -0,0 +1,111 @@
++// Definitions for IOTG-RPI5 Gateway Management Circuitry (GMC)
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/leds/common.h>
++
++/ {
++	compatible = "brcm,bcm2712";
++
++	fragment@0 {
++		target = <&gpio>;
++		__overlay__ {
++			tpm_rstn: tpm-rstn {
++				gpio-hog;
++				gpios = <16 GPIO_ACTIVE_HIGH>;
++				output-high;
++				line-name = "TPM_RSTn";
++				status = "okay";
++			};
++		};
++	};
++
++	fragment@1 {
++		target = <&i2c3>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <400000>;
++			pinctrl-0 = <&rp1_i2c3_22_23>;
++			status = "okay";
++		};
++	};
++
++	fragment@2 {
++		target = <&i2c3>;
++		__overlay__ {
++			eeprom_sb: eeprom-sb@50 {
++				compatible = "atmel,24c08";
++				reg = <0x50>;
++				pagesize = <16>;
++			};
++		};
++	};
++
++	fragment@3 {
++		target = <&i2c3>;
++		__overlay__ {
++			pca9555_sb: pca9555-sb@27 {
++				compatible = "nxp,pca9555";
++				gpio-controller;
++				#gpio-cells = <2>;
++				reg = <0x27>;
++				gpio-line-names =
++					"DO0", "DO1", "DO2", "DO3",
++					"POE_PRESENCE", "RF_KILLn", "EDGE_RSTn", "POE_ASSEM_EN",
++					"EN_5V_ISO1", "SEL_CAN_RS485_A", "eMMC_RST_EXP", "LED_AMBR_CNTL",
++					"PLED_BLUE", "ULED1_RED", "ULED1_GREEN", "SEL_CAN_RS485_B";
++			};
++		};
++	};
++
++	fragment@4 {
++		target = <&i2c3>;
++		__overlay__ {
++			slb9673: slb9673-i2c3@2e {
++				compatible = "infineon,slb9673";
++				reg = <0x2e>;
++				status = "okay";
++			};
++		};
++	};
++
++	fragment@5 {
++		target-path = "/";
++		__overlay__ {
++			user_leds: user-leds {
++				compatible = "gpio-leds";
++				status = "okay";
++
++				uleda_red: user-led-a-red {
++					label = "Red_A"; /* LED1_RED */
++					color = <LED_COLOR_ID_RED>;
++					gpios = <&pca9555_sb 13 GPIO_ACTIVE_HIGH>;
++					default-state = "off";
++				};
++				uleda_green: user-led-a-green {
++					label = "Green_A"; /* LED1_GREEN */
++					color = <LED_COLOR_ID_GREEN>;
++					gpios = <&pca9555_sb 14 GPIO_ACTIVE_HIGH>;
++					default-state = "off";
++				};
++
++				pled_amber: power-led-abmer {
++					label = "PowerLED_Amber";
++					color = <LED_COLOR_ID_AMBER>;
++					gpios = <&pca9555_sb 11 GPIO_ACTIVE_HIGH>;
++					default-state = "off";
++				};
++				pled_blue: power-led-blue {
++					label = "PowerLED_Blue";
++					color = <LED_COLOR_ID_BLUE>;
++					gpios = <&pca9555_sb 12 GPIO_ACTIVE_HIGH>;
++					linux,default-trigger = "heartbeat";
++				};
++			};
++		};
++	};
++
++};
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-a-overlay.dts b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-a-overlay.dts
+new file mode 100644
+index 000000000000..2e08cef0465d
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-a-overlay.dts
+@@ -0,0 +1,64 @@
++// Definitions for IOTG-RPI5 I/O Part A
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++
++/ {
++	compatible = "brcm,bcm2712";
++
++	/* RS485 A */
++	fragment@0 {
++		target = <&rs485_a>;
++		__dormant__ {
++			status = "okay";
++		};
++	};
++	/* SEL A: RS485 */
++	fragment@1 {
++		target = <&sel_a>;
++		__dormant__ {
++			output-high;
++			line-name = "SEL_A_RS485";
++			status = "okay";
++		};
++	};
++
++	/* CAN A */
++	fragment@2 {
++		target = <&can_a_irq>;
++		__dormant__ {
++			status = "okay";
++		};
++	};
++	fragment@3 {
++		target = <&spi2>;
++		__dormant__ {
++			status = "okay";
++		};
++	};
++	/* SEL A: CAN */
++	fragment@4 {
++		target = <&sel_a>;
++		__dormant__ {
++			output-low;
++			line-name = "SEL_A_CAN";
++			status = "okay";
++		};
++	};
++
++	/* 5V_EN_ISO1 Regulator */
++	fragment@5 {
++		target = <&reg_en_5v_iso1>;
++		__dormant__ {
++			enable-active-high;
++		};
++	};
++
++	__overrides__ {
++		rs485 = <0>, "+0+1+5";
++		can   = <0>, "+2+3+4+5";
++	};
++};
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-b-overlay.dts b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-b-overlay.dts
+new file mode 100644
+index 000000000000..247fecbcab47
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-io-b-overlay.dts
+@@ -0,0 +1,64 @@
++// Definitions for IOTG-RPI5 I/O Part A
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++
++/ {
++	compatible = "brcm,bcm2712";
++
++	/* RS485 B */
++	fragment@0 {
++		target = <&rs485_b>;
++		__dormant__ {
++			status = "okay";
++		};
++	};
++	/* SEL B: RS485 */
++	fragment@1 {
++		target = <&sel_b>;
++		__dormant__ {
++			output-high;
++			line-name = "SEL_B_RS485";
++			status = "okay";
++		};
++	};
++
++	/* CAN B */
++	fragment@2 {
++		target = <&can_b_irq>;
++		__dormant__ {
++			status = "okay";
++		};
++	};
++	fragment@3 {
++		target = <&spi0>;
++		__dormant__ {
++			status = "okay";
++		};
++	};
++	/* SEL B: CAN */
++	fragment@4 {
++		target = <&sel_b>;
++		__dormant__ {
++			output-low;
++			line-name = "SEL_B_CAN";
++			status = "okay";
++		};
++	};
++
++	/* 5V_EN_ISO1 Regulator */
++	fragment@5 {
++		target = <&reg_en_5v_iso1>;
++		__dormant__ {
++			enable-active-high;
++		};
++	};
++
++	__overrides__ {
++		rs485 = <0>, "+0+1+5";
++		can   = <0>, "+2+3+4+5";
++	};
++};
+diff --git a/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-modem-reset-overlay.dts b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-modem-reset-overlay.dts
+new file mode 100644
+index 000000000000..93547431f924
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/iotg-rpi5/iotg-rpi5-modem-reset-overlay.dts
+@@ -0,0 +1,45 @@
++// Definitions for IOTG-RPI5 Board to Board Connector 
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	compatible = "brcm,bcm2712";
++
++	fragment@0 {
++		target = <&gpio>;
++		__overlay__ {
++			modem_rst_pinctrl: modem-rst-pinctrl {
++				pins = "gpio7";
++				function = "gpio";
++				bias-disable;
++			};
++		};
++	};
++
++	fragment@1 {
++		target-path = "/";
++		__overlay__ {
++			modem_rst_ctrl: modem-rst-ctrl {
++				pinctrl-names = "default";
++				pinctrl-0 = <&modem_rst_pinctrl>;
++				compatible = "gpio-leds";
++				status = "okay";
++
++				modem_rst: modem-rst {
++					label = "MODEM_RST";
++					gpios = <&gpio 7 GPIO_ACTIVE_HIGH>;
++					linux,default-trigger = "oneshot";
++					led-pattern = <300 300>;
++				};
++			};
++		};
++	};
++
++	__overrides__ {
++		active_low = <&modem_rst>,"gpios:8";
++		delay_ms = <&modem_rst>,"led-pattern:0",<&modem_rst>,"led-pattern:4";
++	};
++};
+diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+index ef043d0a6746..0d7af29e5dc1 100644
+--- a/arch/arm64/boot/dts/Makefile
++++ b/arch/arm64/boot/dts/Makefile
+@@ -14,7 +14,7 @@ subdir-y += bitmain
+ subdir-y += blaize
+ subdir-y += broadcom
+ subdir-y += cavium
+-subdir-y += cix
++subdir-y += compulab
+ subdir-y += exynos
+ subdir-y += freescale
+ subdir-y += hisilicon
+diff --git a/arch/arm64/boot/dts/compulab/Makefile b/arch/arm64/boot/dts/compulab/Makefile
+new file mode 100644
+index 000000000000..c3ffa3703f6e
+--- /dev/null
++++ b/arch/arm64/boot/dts/compulab/Makefile
+@@ -0,0 +1,12 @@
++# SPDX-License-Identifier: GPL-2.0
++
++# Enables support for device-tree overlays
++DTC_FLAGS := -@
++
++dtb-$(CONFIG_ARCH_BCM2835) += iotg-rpi5.dtb
++dtb-$(CONFIG_ARCH_BCM2835) += iotg-rpi5l.dtb
++
++# Enable fixups to support overlays on BCM2835 platforms
++ifeq ($(CONFIG_ARCH_BCM2835),y)
++	DTC_FLAGS += -@
++endif
+diff --git a/arch/arm64/boot/dts/compulab/iotg-rpi5.dts b/arch/arm64/boot/dts/compulab/iotg-rpi5.dts
+new file mode 100644
+index 000000000000..199531c4941c
+--- /dev/null
++++ b/arch/arm64/boot/dts/compulab/iotg-rpi5.dts
+@@ -0,0 +1,5 @@
++// SPDX-License-Identifier: GPL-2.0
++/dts-v1/;
++
++#include "../broadcom/bcm2712-rpi-cm5.dtsi"
++#include "iotg-rpi5.dtsi"
+diff --git a/arch/arm64/boot/dts/compulab/iotg-rpi5.dtsi b/arch/arm64/boot/dts/compulab/iotg-rpi5.dtsi
+new file mode 100644
+index 000000000000..727e8f0a25ab
+--- /dev/null
++++ b/arch/arm64/boot/dts/compulab/iotg-rpi5.dtsi
+@@ -0,0 +1,313 @@
++// SPDX-License-Identifier: GPL-2.0
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/linux-event-codes.h>
++#include <dt-bindings/leds/common.h>
++
++/******** IOTG-RPI5 Gateway Management Circuitry (GMC) ********/
++/ {
++	cl-model = "CompuLab IOT-GATE-RPi5";
++	compatible = "compulab,iotg-rpi5", "raspberrypi,5-compute-module", "brcm,bcm2712";
++
++	/* LEDs */
++	user_leds: user-leds {
++		compatible = "gpio-leds";
++		status = "okay";
++
++		uleda_red: user-led-a-red {
++			label = "Red_A"; /* LED1_RED */
++			color = <LED_COLOR_ID_RED>;
++			gpios = <&pca9555_sb 13 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++		uleda_green: user-led-a-green {
++			label = "Green_A"; /* LED1_GREEN */
++			color = <LED_COLOR_ID_GREEN>;
++			gpios = <&pca9555_sb 14 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		pled_amber: power-led-abmer {
++			label = "PowerLED_Amber";
++			color = <LED_COLOR_ID_AMBER>;
++			gpios = <&pca9555_sb 11 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++		pled_blue: power-led-blue {
++			label = "PowerLED_Blue";
++			color = <LED_COLOR_ID_BLUE>;
++			gpios = <&pca9555_sb 12 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++};
++
++&gpio {
++	tpm_rstn: tpm-rstn {
++		gpio-hog;
++		gpios = <16 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TPM_RSTn";
++		status = "okay";
++	};
++};
++
++&i2c3 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	clock-frequency = <400000>;
++	pinctrl-0 = <&rp1_i2c3_22_23>;
++	status = "okay";
++
++	eeprom_sb: eeprom-sb@50 {
++		compatible = "atmel,24c08";
++		reg = <0x50>;
++		pagesize = <16>;
++	};
++
++	pca9555_sb: pca9555-sb@27 {
++		compatible = "nxp,pca9555";
++		gpio-controller;
++		#gpio-cells = <2>;
++		reg = <0x27>;
++		gpio-line-names =
++			"DO0", "DO1", "DO2", "DO3",
++			"POE_PRESENCE", "RF_KILLn", "EDGE_RSTn", "POE_ASSEM_EN",
++			"EN_5V_ISO1", "SEL_CAN_RS485_A", "eMMC_RST_EXP", "LED_AMBR_CNTL",
++			"PLED_BLUE", "ULED1_RED", "ULED1_GREEN", "SEL_CAN_RS485_B";
++	};
++
++	slb9673: slb9673-i2c3@2e {
++		compatible = "infineon,slb9673";
++		reg = <0x2e>;
++		status = "okay";
++	};
++};
++/******** IOTG-RPI5 GMC - End ********/
++
++/******** IOTG-RPI5 Industrial I/O ********/
++/ {
++	clocks {
++		clk_mcp251xfd_osc: mcp251xfd-osc {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <40000000>;
++			clock-output-names = "mcp251xfd-osc";
++		};
++	};
++
++	reg_en_5v_iso1: regulator-en-5v-iso1 {
++		compatible = "regulator-fixed";
++		regulator-name = "5V_EN_ISO1_REG";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		gpio = <&pca9555_sb 8 GPIO_ACTIVE_HIGH>;
++		regulator-always-on;
++		/* By default, it remains disabled and can only be enabled
++		   by adding an ad-hoc device tree overlay with the
++		   'enable-active-high' property specified
++		*/
++	};
++};
++
++/******** Industrial I/O Part A ********/
++/* MUX SEL A */
++&pca9555_sb {
++	sel_a: sel-a {
++		gpio-hog;
++		gpios = <9 GPIO_ACTIVE_HIGH>;
++		status = "disabled";
++	};
++};
++
++/* RS485 A */
++rs485_a: &uart4 {
++	pinctrl-0 = <&uart4_pins>;
++	status = "disabled";
++};
++
++/* CAN A */
++&gpio {
++	can_a_irq: can-a-irq {
++		pins = "gpio24";
++		function = "gpio";
++		bias-pull-up;
++		input-enable;
++		status = "disabled";
++	};
++};
++
++&spi2 {
++	/* needed to avoid dtc warning */
++	#address-cells = <1>;
++	#size-cells = <0>;
++	cs-gpios = <&gpio 0 GPIO_ACTIVE_LOW>;
++	status = "disabled";
++
++	can_a: mcp251xfd_a@0 {
++		compatible = "microchip,mcp251xfd";
++		reg = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&can_a_irq>;
++		spi-max-frequency = <15000000>;
++		interrupt-parent = <&gpio>;
++		interrupts = <24 IRQ_TYPE_LEVEL_LOW>;
++		clocks = <&clk_mcp251xfd_osc>;
++	};
++};
++/******** Industrial I/O Part A - End ********/
++
++/******** Industrial I/O Part B ********/
++/* MUX SEL B */
++&pca9555_sb {
++	sel_b: sel-b {
++		gpio-hog;
++		gpios = <15 GPIO_ACTIVE_HIGH>;
++		status = "disabled";
++	};
++};
++
++/* RS485 B */
++rs485_b: &uart2 {
++	pinctrl-0 = <&uart2_pins>;
++	status = "disabled";
++};
++
++/* CAN B */
++&spidev0 {
++	status = "disabled";
++};
++&spidev1 {
++	status = "disabled";
++};
++
++&gpio {
++	can_b_irq: can_b_irq {
++		pins = "gpio26";
++		function = "gpio";
++		bias-pull-up;
++		input-enable;
++		status = "disabled";
++	};
++};
++
++&spi0 {
++	/* needed to avoid dtc warning */
++	#address-cells = <1>;
++	#size-cells = <0>;
++	pinctrl-0 = <&spi0_pins>;
++	cs-gpios = <&gpio 8 GPIO_ACTIVE_LOW>;
++	status = "disabled";
++
++	can_b: mcp251xfd_b@0 {
++		compatible = "microchip,mcp251xfd";
++		reg = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&can_b_irq>;
++		spi-max-frequency = <15000000>;
++		interrupt-parent = <&gpio>;
++		interrupts = <26 IRQ_TYPE_LEVEL_LOW>;
++		clocks = <&clk_mcp251xfd_osc>;
++	};
++};
++/******** Industrial I/O Part B - End ********/
++
++/******** Industrial I/O: DIxOx ********/
++/******** Digital Inputs ********/
++/*
++ * By default, all Digital Inputs (DIs) are enabled.
++ * In this implementation, the underlying GPIOs are configured
++ * as inputs with the pull-down enabled.
++ * As a result, these GPIOs are accessible from userspace.
++ *
++ * To disable a specific DI, the corresponding GPIO must be hogged
++ * as an input by means of an ad-hoc device tree overlay.
++ */
++&gpio {
++	pinctrl-0 = <&di0 &di1 &di2 &di3>;
++	pinctrl-names = "default";
++
++	di0: di_0@0 {
++		pins = "gpio6";
++		function = "gpio";
++		bias-pull-down;
++		input-enable;
++	};
++	di1: di_1@1 {
++		pins = "gpio19";
++		function = "gpio";
++		bias-pull-down;
++		input-enable;
++	};
++	di2: di_2@2 {
++		pins = "gpio25";
++		function = "gpio";
++		bias-pull-down;
++		input-enable;
++	};
++	di3: di_3@3 {
++		pins = "gpio27";
++		function = "gpio";
++		bias-pull-down;
++		input-enable;
++	};
++};
++/******** Digital Inputs - End ********/
++
++/******** Digital Ouputs ********/
++ /*
++ * By default, all Digital Outputs (DOs) are disabled.
++ * In this implementation, all underlying GPIOs are configured
++ * as outputs driven to the low state (gpio-hog).
++ * As a result, these GPIOs cannot be accessed from userspace.
++ *
++ * To enable a specific DO, the underlying output GPIO must be un-hogged
++ * by means of an ad-hoc device tree overlay.
++ */
++&pca9555_sb {
++	do0: do_0@0 {
++		gpio-hog;
++		gpios = <0 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "DO0 disabled";
++		status = "okay";
++	};
++	do1: do_1@1 {
++		gpio-hog;
++		gpios = <1 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "DO1 disabled";
++		status = "okay";
++	};
++	do2: do_2@2 {
++		gpio-hog;
++		gpios = <2 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "DO2 disabled";
++		status = "okay";
++	};
++	do3: do_3@3 {
++		gpio-hog;
++		gpios = <3 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "DO3 disabled";
++		status = "okay";
++	};
++};
++/******** Digital Ouputs - End ********/
++/******** Industrial I/O: DIxOx - End ********/
++/******** IOTG-RPI5 Industrial I/O - End ********/
++
++
++/******** IOTG-RPI5 Board to Board Connector (B2B) ********/
++i2c_b2b: &i2c6 {
++	pinctrl-0 = <&rp1_i2c6_38_39>;
++	pinctrl-names = "default";
++	clock-frequency = <400000>;
++	status = "okay";
++};
++
++i2c_csi_dsi0: &i2c_b2b {};
++i2c_csi_dsi1: &i2c3 {};
++i2c_csi_dsi: &i2c_csi_dsi1 { };
++/******** IOTG-RPI5 B2B - End ********/
+diff --git a/arch/arm64/boot/dts/compulab/iotg-rpi5l.dts b/arch/arm64/boot/dts/compulab/iotg-rpi5l.dts
+new file mode 100644
+index 000000000000..5965fa9f5e2a
+--- /dev/null
++++ b/arch/arm64/boot/dts/compulab/iotg-rpi5l.dts
+@@ -0,0 +1,5 @@
++// SPDX-License-Identifier: GPL-2.0
++/dts-v1/;
++
++#include "../broadcom/bcm2712-rpi-cm5l.dtsi"
++#include "iotg-rpi5.dtsi"
+-- 
+2.34.1
+
