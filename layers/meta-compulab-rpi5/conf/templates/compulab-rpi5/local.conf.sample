@@ -1,0 +1,61 @@
+MACHINE = "iotg-rpi5"
+DISTRO ??= "poky"
+IMAGE_FEATURES += "empty-root-password allow-empty-password allow-root-login post-install-logging"
+USER_CLASSES ?= "buildstats"
+PATCHRESOLVE = "noop"
+BB_DISKMON_DIRS ??= "\
+    STOPTASKS,${TMPDIR},1G,100K \
+    STOPTASKS,${DL_DIR},1G,100K \
+    STOPTASKS,${SSTATE_DIR},1G,100K \
+    STOPTASKS,/tmp,100M,100K \
+    HALT,${TMPDIR},100M,1K \
+    HALT,${DL_DIR},100M,1K \
+    HALT,${SSTATE_DIR},100M,1K \
+    HALT,/tmp,10M,1K"
+CONF_VERSION = "2"
+
+# reduce_diskspace
+INHERIT += "rm_work_and_downloads"
+
+# standard
+PACKAGE_CLASSES = "package_deb"
+
+# Automatically accept commercial licenses required for certain video/audio plugins
+LICENSE_FLAGS_ACCEPTED:append = " \
+	synaptics-killswitch \
+	commercial \
+"
+
+# Use systemd as the init manager for modern graphical environments
+INIT_MANAGER = "systemd"
+
+# Optimize and enable Graphics / Display Features
+DISTRO_FEATURES:append = " wayland opengl vulkan systemd pam"
+DISTRO_FEATURES:remove = " x11"
+
+# Select VC4/VC5 graphics driver (Mesa driver handles Raspberry Pi 5 VideoCore VII)
+VC4DTBO = "vc4-kms-v3d"
+
+# Image Customization & GUI Packages
+IMAGE_INSTALL:append = " \
+	weston \
+	weston-init \
+	weston-examples \
+	wayland \
+	wayland-protocols \
+	libva \
+	mesa-megadriver \
+	kmscube \
+"
+
+# Enable hardware acceleration for video playback if required
+IMAGE_INSTALL:append = " \
+	gstreamer1.0-plugins-bad \
+	gstreamer1.0-plugins-good \
+"
+
+# Image extra packages
+IMAGE_INSTALL:append = " \
+	gdb \
+	firefox \
+"
