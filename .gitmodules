@@ -22,3 +22,6 @@
 [submodule "layers/meta-qt5"]
 	path = layers/meta-qt5
 	url = https://github.com/meta-qt5/meta-qt5
+[submodule "layers/meta-compulab-rpi5"]
+	path = layers/meta-compulab-rpi5
+	url = https://github.com/compulab-yokneam/meta-compulab-rpi5.git
