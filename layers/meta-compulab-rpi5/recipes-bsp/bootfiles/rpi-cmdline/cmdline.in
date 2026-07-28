@@ -1,1 +1,0 @@
-earlycon=pl011,0x107d001000,115200n8 console=ttyAMA0,115200 8250.nr_uarts=1 earlycon keep_bootcon loglevel=8 dwc_otg.lpm_enable=0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait net.ifnames=0
