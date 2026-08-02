@@ -19,3 +19,8 @@ TEMPLATECONF=$(pwd)/layers/meta-compulab-rpi5/conf/templates/compulab-rpi5 . $(p
 ```
 bitbake -k core-image-weston
 ```
+
+* Get back to already created build environment:
+```
+source layers/openembedded-core/oe-init-build-env build-compulab-rpi5
+```
