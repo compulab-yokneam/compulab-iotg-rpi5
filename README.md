@@ -5,7 +5,7 @@
 * There are two methods of initializing this repository:
   |Methods #|Command|
   |:---|:---|
-  |#1|git clone --recursive https://github.com/compulab-yokneam/compulab-iotg-rpi5.git|
+  |#1|git clone --recursive https://github.com/compulab-yokneam/compulab-iotg-rpi5.git<br>cd compulab-iotg-rpi5|
   |#2|git clone https://github.com/compulab-yokneam/compulab-iotg-rpi5.git<br>cd compulab-iotg-rpi5<br>git submodule update --init --recursive|
 
 * Init build environment:
