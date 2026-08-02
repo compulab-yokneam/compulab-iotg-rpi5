@@ -12,7 +12,8 @@ bring in all the needed dependencies.
 
 * Init build environmet
 ```
-TEMPLATECONF=$(pwd)/layers/meta-compulab-rpi5/conf/templates/compulab-rpi5 . $(pwd)/layers/openembedded-core/oe-init-build-env build-compulab-rpi5
+TEMPLATECONF=$(pwd)/layers/meta-compulab-rpi5/conf/templates/compulab-rpi5 \
+  source $(pwd)/layers/openembedded-core/oe-init-build-env build-compulab-rpi5
 ```
 
 * Issie the image build
