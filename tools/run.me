@@ -1,0 +1,7 @@
+#!/bin/bash 
+
+git clone --recursive https://github.com/compulab-yokneam/compulab-iotg-rpi5.git
+cd compulab-iotg-rpi5
+
+TEMPLATECONF=$(pwd)/layers/meta-compulab-rpi5/conf/templates/compulab-rpi5 \
+  source $(pwd)/layers/openembedded-core/oe-init-build-env build-compulab-rpi5
