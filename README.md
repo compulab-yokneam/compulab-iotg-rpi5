@@ -40,3 +40,5 @@
     mmcblk0boot0 179:32   0    4M  1 disk 
     mmcblk0boot1 179:64   0    4M  1 disk
     ```
+## Resource
+* A ready to run image.<br>Downolad the files from this [location](https://drive.google.com/drive/folders/1QHP0HK2Cg4HGfpgC1rVly-ED6Q3UblRy?usp=sharing).
