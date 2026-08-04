@@ -6,9 +6,11 @@
   source <(curl -L https://raw.githubusercontent.com/compulab-yokneam/compulab-iotg-rpi5/refs/heads/master/tools/run.me)
   ```
 * Issie the image build:
-  ```
-  bitbake -k core-image-weston
-  ```
+  
+  |Suggested Images|Command|Description|
+  |:---|:---|:---|
+  |core-image-x11|bitbake -k core-image-x11|Lightweigh x11 sample image with: xorg, xterm, firefox|
+  |clab-xfce-image|bitbake -k clab-xfce-image|XFCE4 desktop sample image|
 
 * Get back to the already created build environment:
   ```
@@ -24,7 +26,7 @@
       ```
     * Deploy the image:
       ```
-      sudo bmaptool copy --bmap core-image-weston-${MACHINE}.rootfs.wic.bmap core-image-weston-${MACHINE}.rootfs.wic.bz2 /dev/sdX
+      sudo bmaptool copy --bmap core-image-x11-${MACHINE}.rootfs.wic.bmap core-image-x11-${MACHINE}.rootfs.wic.bz2 /dev/sdX
       ```
 * Target iotg-pri5 device
   * Boot up the device using the created media; login and issue:
